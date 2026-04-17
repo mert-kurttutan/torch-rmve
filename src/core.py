@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Tuple
 
 import numpy as np
+from safetensors.torch import load_file
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,14 +17,11 @@ N_MELS = 128
 MEL_FMIN = 30
 MEL_FMAX = SAMPLE_RATE // 2
 WINDOW_LENGTH = 1024
-DEFAULT_MODEL_URL = "https://huggingface.co/lj1995/VoiceConversionWebUI/resolve/main/rmvpe.pt"
+DEFAULT_MODEL_URL = "https://huggingface.co/mert-kurttutan/rmve/resolve/main/rmvpe.safetensors"
 
 
-def get_model_path(model_path: str | None = None) -> str:
-    if model_path is None:
-        model_path = Path(__file__).parent / "rmvpe.pt"
-    else:
-        model_path = Path(model_path)
+def get_model_path() -> str:
+    model_path = Path(__file__).parent / "rmvpe.safetensors"
 
     if not model_path.exists():
         print(f"RMVPE model not found at {model_path}")
@@ -308,7 +306,7 @@ def to_local_average_cents(salience, center=None, thred=0.0):
 
 class RMVEPitchAlgorithm:
 
-    def __init__(self, model_path: str | None = None, sample_rate: int = SAMPLE_RATE, hop_size: int = 160, fmin: float = MEL_FMIN, fmax: float = MEL_FMAX):
+    def __init__(self, sample_rate: int = SAMPLE_RATE, hop_size: int = 160, fmin: float = MEL_FMIN, fmax: float = MEL_FMAX):
         if fmin >= fmax:
             raise ValueError(f"fmin ({fmin}) must be less than fmax ({fmax})")
         if sample_rate <= 0:
@@ -322,20 +320,16 @@ class RMVEPitchAlgorithm:
         self.fmax = fmax
 
         self.model_hop_length = 160
-        model_path = get_model_path(model_path)
+        model_path = get_model_path()
         self.load_model(model_path)
 
     def load_model(self, model_path):
         model = RMVE(self.model_hop_length, 4, 1, (2, 2))
-        checkpoint = torch.load(model_path, map_location="cpu")
-        if isinstance(checkpoint, dict) and "model" in checkpoint:
-            checkpoint = checkpoint["model"]
-        if hasattr(checkpoint, "module"):
-            state_dict = checkpoint.module.state_dict()
-        elif isinstance(checkpoint, dict) and "state_dict" in checkpoint:
-            state_dict = checkpoint["state_dict"]
+        model_path = Path(model_path)
+        if model_path.suffix == ".safetensors":
+            state_dict = load_file(str(model_path), device="cpu")
         else:
-            state_dict = checkpoint.state_dict() if hasattr(checkpoint, "state_dict") else checkpoint
+            raise ValueError(f"Unsupported model format: {model_path.suffix}")
 
         model_dict = model.state_dict()
         filtered_dict = {k: v for k, v in state_dict.items() if k in model_dict and model_dict[k].shape == v.shape}

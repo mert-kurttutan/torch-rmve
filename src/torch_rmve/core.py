@@ -301,7 +301,7 @@ def to_local_average_cents(salience, center=None, thred=0.0):
         return product_sum / weight_sum if torch.max(salience) > thred else 0
     if salience.ndim == 2:
         return torch.stack([to_local_average_cents(salience[i, :], None, thred) for i in range(salience.shape[0])])
-    raise ValueError("label should be either 1d or 2d ndarray")
+    raise ValueError("label should be either 1d or 2d tensor")
 
 
 class RMVEPitchAlgorithm:
@@ -338,30 +338,31 @@ class RMVEPitchAlgorithm:
         model.eval()
         self.model = model
 
-    def _preprocess_audio(self, audio: np.ndarray) -> np.ndarray:
+    def _preprocess_audio(self, audio: torch.Tensor) -> torch.Tensor:
         if len(audio.shape) == 2:
-            audio = audio.mean(axis=1)
-        audio = audio.astype(np.float32)
+            audio = torch.mean(audio, dim=1)
+        audio = audio.to(torch.float32)
 
         if self.sample_rate != SAMPLE_RATE:
+            audio_np = audio.cpu().numpy()
             try:
                 from resampy import resample
 
-                audio = resample(audio, self.sample_rate, SAMPLE_RATE)
+                audio = resample(audio_np, self.sample_rate, SAMPLE_RATE)
             except ImportError:
                 from scipy.signal import resample
 
                 target_length = int(len(audio) * SAMPLE_RATE / self.sample_rate)
-                audio = resample(audio, target_length).astype(np.float32)
+                audio = resample(audio_np, target_length).astype(np.float32)
+                audio = torch.from_numpy(audio).float().contiguous()
 
         return audio
 
-    def _extract_raw_pitch_and_periodicity(self, audio: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def _extract_raw_pitch_and_periodicity(self, audio: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         audio_processed = self._preprocess_audio(audio)
-        audio_tensor = torch.from_numpy(audio_processed).float().contiguous()
 
         with torch.no_grad():
-            pitch_pred = self.model(audio_tensor.unsqueeze(0)).squeeze(0)
+            pitch_pred = self.model(audio_processed.unsqueeze(0)).squeeze(0)
 
         cents = to_local_average_cents(pitch_pred, thred=0.0)
         f0 = torch.tensor([10 * (2 ** (cent / 1200)) if cent else 0 for cent in cents], dtype=torch.float32)
@@ -375,7 +376,7 @@ class RMVEPitchAlgorithm:
     def _get_default_threshold(self) -> float:
         return 0.03
 
-    def extract_continuous_periodicity(self, audio: np.ndarray) -> Tuple[torch.Tensor, torch.Tensor]:
+    def extract_continuous_periodicity(self, audio: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         times, pitch, periodicity = self._extract_raw_pitch_and_periodicity(audio)
         pitch, periodicity = self._sanity_check(pitch, periodicity)
         target_length = (len(audio) + self.hop_size - 1) // self.hop_size

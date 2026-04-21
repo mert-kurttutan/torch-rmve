@@ -1,5 +1,5 @@
 [project]
-name = "torch-rmve"
+name = "torch-rmvpe"
 version = "0.1.0"
 description = "Torch implementation of the RMVPE model"
 readme = "README.md"
@@ -24,8 +24,8 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://github.com/mert-kurttutan/torch-rmve"
-repository = "https://github.com/mert-kurttutan/torch-rmve"
+homepage = "https://github.com/mert-kurttutan/torch-rmvpe"
+repository = "https://github.com/mert-kurttutan/torch-rmvpe"
 
 
 [build-system]
@@ -33,7 +33,7 @@ requires = ["hatchling>=1.22.0,<2.0.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/torch_rmve"]
+packages = ["src/torch_rmvpe"]
 
 [dependency-groups]
 dev = [

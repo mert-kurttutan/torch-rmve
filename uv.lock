@@ -2247,7 +2247,7 @@ wheels = [
 ]
 
 [[package]]
-name = "torch-rmve"
+name = "torch-rmvpe"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

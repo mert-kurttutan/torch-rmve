@@ -17,7 +17,7 @@ N_MELS = 128
 MEL_FMIN = 30
 MEL_FMAX = SAMPLE_RATE // 2
 WINDOW_LENGTH = 1024
-DEFAULT_MODEL_URL = "https://huggingface.co/mert-kurttutan/rmve/resolve/main/rmvpe.safetensors"
+DEFAULT_MODEL_URL = "https://huggingface.co/mert-kurttutan/rmvpe/resolve/main/rmvpe.safetensors"
 
 
 def get_model_path() -> str:
@@ -263,7 +263,7 @@ class BiGRU(nn.Module):
         return self.gru(x)[0]
 
 
-class RMVE(nn.Module):
+class RMVPE(nn.Module):
     def __init__(self, hop_length, n_blocks, n_gru, kernel_size, en_de_layers=5, inter_layers=4, in_channels=1, en_out_channels=16):
         super().__init__()
         self.mel = MelSpectrogram(N_MELS, SAMPLE_RATE, WINDOW_LENGTH, hop_length, None, MEL_FMIN, MEL_FMAX)
@@ -337,7 +337,7 @@ def to_local_average_cents(salience, thred=0.5):
     return average_cents_tensor.reshape(batch_size, n_features)
 
 
-class RMVEPitchAlgorithm:
+class RMVPEPitchAlgorithm:
 
     def __init__(self, sample_rate: int = SAMPLE_RATE, hop_size: int = 160, fmin: float = MEL_FMIN, fmax: float = MEL_FMAX):
         if fmin >= fmax:
@@ -357,7 +357,7 @@ class RMVEPitchAlgorithm:
         self.load_model(model_path)
 
     def load_model(self, model_path):
-        model = RMVE(self.model_hop_length, 4, 1, (2, 2))
+        model = RMVPE(self.model_hop_length, 4, 1, (2, 2))
         model_path = Path(model_path)
         if model_path.suffix == ".safetensors":
             state_dict = load_file(str(model_path), device="cpu")

@@ -3,11 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import torch
-from torch_rmve import RMVEPitchAlgorithm
+from torch_rmvpe import RMVPEPitchAlgorithm
 
 
 def test_random_audio_shapes() -> None:
-    algorithm = RMVEPitchAlgorithm(sample_rate=16000, hop_size=160)
+    algorithm = RMVPEPitchAlgorithm(sample_rate=16000, hop_size=160)
     batch_size = 1
     sample_rate = 16000
     seconds = 30

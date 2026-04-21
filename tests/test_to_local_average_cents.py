@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import torch
 
-from torch_rmve.core import to_local_average_cents, to_local_average_cents_old
+from torch_rmvpe.core import to_local_average_cents, to_local_average_cents_old
 
 
 def test_to_local_average_cents_equivalence_random() -> None:
